@@ -24,6 +24,8 @@ import groovy.lang.*;
 import java.io.*;
 import java.lang.reflect.*;
 
+import com.caucho.quercus.env.StringValue;
+
 public class GroovyPHP extends GroovyObjectSupport {
 	
 	private PHP php;
@@ -67,7 +69,7 @@ public class GroovyPHP extends GroovyObjectSupport {
 		}
 	}
 	
-	public GroovyPHPObject fx(String fxName, Object ... args) {
+	public GroovyPHPObject fx(StringValue fxName, Object ... args) {
 		return new GroovyPHPObject(php.fx(fxName, args));
 	}
 	

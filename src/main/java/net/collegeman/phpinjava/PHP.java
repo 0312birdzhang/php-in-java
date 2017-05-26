@@ -24,6 +24,8 @@ import com.caucho.vfs.*;
 import com.caucho.util.*;
 import com.caucho.quercus.env.*;
 import com.caucho.quercus.page.*;
+import com.caucho.quercus.servlet.api.QuercusHttpServletRequest;
+import com.caucho.quercus.servlet.api.QuercusHttpServletResponse;
 
 import java.util.logging.*;
 import java.net.*;
@@ -198,8 +200,7 @@ public class PHP {
 			ws = new WriteStream(out);
 			ws.setNewlineString("\n");
 			
-			env = getQuercus().createEnv(page, ws, request, response);
-			
+			env = getQuercus().createEnv(page, ws, (QuercusHttpServletRequest)request, (QuercusHttpServletResponse)response);
 			env.setPwd(new FilePath(System.getProperty("user.dir")));
 			
 			env.start();
@@ -305,7 +306,7 @@ public class PHP {
 	 * Call the PHP function named <code>fxName</code> with arguments <code>args</code>
 	 * @return An instance of PHPObject, wrapped around the return value of the function.
 	 */
-	public PHPObject fx(String fxName, Object ... args) {
+	public PHPObject fx(StringValue fxName, Object ... args) {
 		if (args != null && args.length > 0) {
 			Value[] values = new Value[args.length];
 			for (int i=0; i<args.length; i++)
