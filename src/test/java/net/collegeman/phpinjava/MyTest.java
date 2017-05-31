@@ -1,11 +1,13 @@
 package net.collegeman.phpinjava;
 
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.Map;
 
 import com.caucho.quercus.env.Env;
+import com.caucho.quercus.env.EnvVar;
+import com.caucho.quercus.env.StringValue;
 import com.caucho.quercus.env.Value;
-import com.caucho.quercus.env.Var;
 
 /**
  * @author debo.zhang
@@ -21,25 +23,32 @@ public class MyTest {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+/*		Quercus quercus = new Quercus();
+		Env testEnv = new Env(quercus);
+		System.out.println("php_version:"+testEnv.getConstant("PHP_VERSION"));
+		*/
 //		Env env  = new PHP("classpath:/net/collegeman/phpinjava/php/production_config.inc.php").getEnv();
-		Env env  = new PHP("classpath:/net/collegeman/phpinjava/php/development.config.php").getEnv();
+		
+//		String config_file = "http://127.0.0.1:10086/development.config.php";
+		String config_file = "classpath:/net/collegeman/phpinjava/php/gpdroid_api/development_config.inc.php";
+		Env env  = new PHP(config_file).getEnv();
 //		Env env  = new PHP("classpath:/net/collegeman/phpinjava/php/gpdroid_api/development_config.inc.php").getEnv();
 		System.out.println("php_version:"+env.getConstant("PHP_VERSION"));
-		System.exit(0);
 		//获取数组
-		Map<String, Var> map = env.getEnv();
+		Map<StringValue, EnvVar> map = env.getEnv();
 		StringBuffer sBuffer = new StringBuffer();
 		sBuffer.append("[");
-		for(String key:map.keySet()){
+		for(StringValue key:map.keySet()){
 //			System.out.println("=====key:"+key+"=====");
 			sBuffer.append("{").append(yh).append(key).append(yh).append(mh);
-			Var var =	map.get(key);
-			if(var.isString()){
+			EnvVar var =	map.get(key);
+			
+			if(var.getVar().isString()){
 //				System.out.println("====value:"+var.toString()+"====");
 				sBuffer.append(yh).append(var.toString()).append(yh).append(dh).append("}").append(dh);
 				continue;
 			}
-			Iterator<Map.Entry<Value,Value>> iterator = var.getIterator(env);
+			Iterator<Map.Entry<Value,Value>> iterator = var.getVar().getIterator(env);
 			delegate(iterator,env,sBuffer);
 			sBuffer.append("}").append(dh);
 		}

@@ -1,5 +1,20 @@
 package net.collegeman.phpinjava;
 
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.logging.Logger;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+
 /**
  * PHP-in-Java PHP wrapper for Java and Groovy.
  * Copyright (C) 2009-2010 Collegeman.net, LLC.
@@ -18,21 +33,21 @@ package net.collegeman.phpinjava;
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
-import com.caucho.quercus.*;
-import com.caucho.vfs.*;
-import com.caucho.util.*;
-import com.caucho.quercus.env.*;
-import com.caucho.quercus.page.*;
-import com.caucho.quercus.servlet.api.QuercusHttpServletRequest;
-import com.caucho.quercus.servlet.api.QuercusHttpServletResponse;
-
-import java.util.logging.*;
-import java.net.*;
-import java.io.*;
-import java.util.*;
-
-import org.springframework.mock.web.*;
+import com.caucho.quercus.Quercus;
+import com.caucho.quercus.QuercusContext;
+import com.caucho.quercus.QuercusEngine;
+import com.caucho.quercus.env.Env;
+import com.caucho.quercus.env.QuercusClass;
+import com.caucho.quercus.env.StringValue;
+import com.caucho.quercus.env.Value;
+import com.caucho.quercus.page.QuercusPage;
+import com.caucho.quercus.servlet.api.QuercusHttpServletRequestImpl;
+import com.caucho.quercus.servlet.api.QuercusHttpServletResponseImpl;
+import com.caucho.vfs.FilePath;
+import com.caucho.vfs.StreamImpl;
+import com.caucho.vfs.StringStream;
+import com.caucho.vfs.WriteStream;
+import com.caucho.vfs.WriterStreamImpl;
 
 /**
  * <p>Instances of this class wrap one or more PHP scripts, making it possible for
@@ -60,12 +75,14 @@ import org.springframework.mock.web.*;
 public class PHP {
 
 	private static final Logger log = Logger.getLogger(PHP.class.getName());
-	private static Quercus quercus;
+	private static QuercusContext quercus;
+	protected QuercusEngine engine = new QuercusEngine();
 	
-	private synchronized Quercus getQuercus() {
+	private synchronized QuercusContext getQuercus() {
 		if (quercus == null) {
-			quercus = new Quercus();
-		}		
+			quercus = new QuercusContext();
+			quercus.init();
+		}
 		return quercus;
 	}
 	
@@ -163,6 +180,7 @@ public class PHP {
 		}
 		else {
 			try {
+				System.err.println(ref.getAbsolutePath());
 				main = getQuercus().parse(new FilePath(ref.getAbsolutePath()));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -181,14 +199,18 @@ public class PHP {
 	private Env env;
 	private MockHttpServletRequest request;
 	private MockHttpServletResponse response;
+	private QuercusHttpServletRequestImpl requestImpl;
+	private QuercusHttpServletResponseImpl responseImpl;
 	private StreamImpl out;
 	private WriteStream ws;
 	
 	private void initEnv(QuercusPage page) {
 		if (env == null) {
+			
 			request = new MockHttpServletRequest();
 			response = new MockHttpServletResponse();
-			
+			requestImpl = new QuercusHttpServletRequestImpl(request);
+			responseImpl = new QuercusHttpServletResponseImpl(response);
 			WriterStreamImpl writer = new WriterStreamImpl();
 			try {
 				writer.setWriter(response.getWriter());
@@ -199,10 +221,8 @@ public class PHP {
 			out = writer;
 			ws = new WriteStream(out);
 			ws.setNewlineString("\n");
-			
-			env = getQuercus().createEnv(page, ws, (QuercusHttpServletRequest)request, (QuercusHttpServletResponse)response);
+			env = getQuercus().createEnv(page, ws,requestImpl,responseImpl);
 			env.setPwd(new FilePath(System.getProperty("user.dir")));
-			
 			env.start();
 		}
 	}
@@ -306,16 +326,15 @@ public class PHP {
 	 * Call the PHP function named <code>fxName</code> with arguments <code>args</code>
 	 * @return An instance of PHPObject, wrapped around the return value of the function.
 	 */
-	public PHPObject fx(StringValue fxName, Object ... args) {
+	public PHPObject fx(String fxName, Object ... args) {
 		if (args != null && args.length > 0) {
 			Value[] values = new Value[args.length];
 			for (int i=0; i<args.length; i++)
 				values[i] = toValue(getEnv(), args[i]);
-				
-			return new PHPObject(getEnv(), getEnv().call(fxName, values));
+			return new PHPObject(getEnv(), getEnv().call(StringValue.create(fxName).toStringValue(), values));
 		}
 		else {
-			return new PHPObject(getEnv(), getEnv().call(fxName));
+			return new PHPObject(getEnv(), getEnv().call(StringValue.create(fxName).toStringValue()));
 		}
 	}
 	
@@ -340,5 +359,6 @@ public class PHP {
 			return new PHPObject(getEnv(), clazz.callNew(getEnv(), new Value[]{}));
 		}
 	}
+	
 	
 }

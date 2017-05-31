@@ -1,7 +1,6 @@
 package net.collegeman.phpinjava;
 
 import junit.framework.*;
-import com.caucho.quercus.env.*;
 import java.util.*;
 import java.io.*;
 

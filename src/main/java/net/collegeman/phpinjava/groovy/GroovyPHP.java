@@ -69,7 +69,7 @@ public class GroovyPHP extends GroovyObjectSupport {
 		}
 	}
 	
-	public GroovyPHPObject fx(StringValue fxName, Object ... args) {
+	public GroovyPHPObject fx(String fxName, Object ... args) {
 		return new GroovyPHPObject(php.fx(fxName, args));
 	}
 	
